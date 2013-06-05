@@ -2,6 +2,9 @@ Proger firmware for stacky
 ======================
 
 This firmware allows a Proger to upload code to any Stacky device using i2c with avrdude
+To build the firmware use INO tool from http://inotool.org/ or the Arduino IDE
+
+**When using the Arduino IDE copy the libraries in the lib directory to your Arduino libraries forder!!**
 
 #### Example
 ```bash
