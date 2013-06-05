@@ -14,7 +14,7 @@ void get_mcusr(void)
  MCUSR = 0;
  wdt_disable();
 }
-
+int i2c_addr;
 #define I2C_ADDR 0x29
 #define CMD_READ_PAGE		0x10
 #define CMD_WRITE_PAGE		0x20
@@ -46,6 +46,7 @@ void setup() {
   pinMode(5,OUTPUT);
   digitalWrite(5,HIGH);
   delay(20);
+  i2c_addr = I2C_ADDR;
   
  Serial.println("test start");
 
@@ -95,6 +96,9 @@ void loop() {
          case 'x': 
             //setLED(); 
             break; 
+		 case 'i':
+		 	setI2cAddr();
+		 	break;
          case 'y': 
             //clearLED(); 
             break; 
@@ -185,7 +189,7 @@ void selectDeviceType() // 'T'
 void enterProgramMode() // 'P' 
 { 
    resetDevice();
-   I2c.write(I2C_ADDR,0);
+   I2c.write(i2c_addr,0);
    // what else is it going to do? 
    sendByte('\r'); 
 } 
@@ -195,8 +199,8 @@ void readSignatureBytes(void) // 'S'
 	uint8_t cmd[3] = {0,0,0};
 	uint8_t info_buffer[8]={0,0,0,0,0,0,0,0};
 	memset(info_buffer,0,8);
-	I2c.write(I2C_ADDR,2,cmd,3);
-	I2c.read(I2C_ADDR,8,info_buffer);
+	I2c.write(i2c_addr,2,cmd,3);
+	I2c.read(i2c_addr,8,info_buffer);
     sendByte( info_buffer[2] ); 
     sendByte( info_buffer[1] ); 
     sendByte( info_buffer[0] ); 
@@ -220,7 +224,7 @@ void resetDevice() {
 }
 
 void enterBootloader() {
-	I2c.write(I2C_ADDR,0);
+	I2c.write(i2c_addr,0);
 }
 
 void BlockRead(uint16_t size, uint8_t type) 
@@ -245,7 +249,7 @@ void startBlockFlashRead(uint16_t size)
 		cmd[3] = *addr_p;
 
 		memset(pageBuffer,0,sizeof(pageBuffer)); 
-	  	  I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
+	  	  I2c.read(i2c_addr,4,cmd,size,pageBuffer);
 	     address = address + size;
 	                       // send byte 
 	    for(int i=0;i<size;i++) {
@@ -294,7 +298,7 @@ void startBlockFlashLoad(uint16_t size)
 	pageBuffer[1] = *(addr_p + 1);
 	pageBuffer[2] = *addr_p;
 
-	I2c.write(I2C_ADDR,2,pageBuffer,SPM_PAGESIZE+3);
+	I2c.write(i2c_addr,2,pageBuffer,SPM_PAGESIZE+3);
 
 	address = address + size;     // word increment 
 	delay(250);
@@ -304,7 +308,12 @@ void startBlockFlashLoad(uint16_t size)
 
 void exitBootloader() 
 {
-    I2c.write(I2C_ADDR,1,0x80);
+    I2c.write(i2c_addr,1,0x80);
     // what else is it going to do? 
     sendByte('\r'); 
+}
+
+void setI2cAddr() {
+	i2c_addr = receiveByte();
+	sendByte('\r'); 
 }
