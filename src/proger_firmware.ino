@@ -238,16 +238,12 @@ void BlockRead(uint16_t size, uint8_t type)
 
 void startBlockFlashRead(uint16_t size) 
 { 
-	//delay(10);
-	//do { 
 		uint8_t cmd[4] = {2,1,0,0};
 		uint8_t * addr_p = (uint8_t*)&address; 
 		//uint16_t waddress = address >> 1;
 		cmd[2] = *(addr_p + 1);//(uint8_t)(((uint16_t)address) << 8); // Convert to word address
 		cmd[3] = *addr_p;
-		
-		  //uint8_t read_buffer=0;
-	  	  //I2c.write(I2C_ADDR,2,cmd,3);
+
 		memset(pageBuffer,0,sizeof(pageBuffer)); 
 	  	  I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
 	     address = address + size;
@@ -256,8 +252,7 @@ void startBlockFlashRead(uint16_t size)
 	                         // reduce number of bytes to read by one 
 	    	wdt_reset();
 	    	sendByte(pageBuffer[i]);
-	    	//delay(5);
-	  }// while (size--);              
+	  }       
 } 
 
 
@@ -283,32 +278,32 @@ void BlockLoad(uint16_t size, uint8_t type)
 void startBlockFlashLoad(uint16_t size) 
 { 
 
-   uint16_t i,cnt,tempWord; 
+	uint16_t i,cnt,tempWord; 
 
-   // store values to be programmed in temporary buffer 
-   for (cnt=3; cnt<UART_RX_BUFFER_SIZE+3; cnt++) { 
-      if (cnt<size+3) pageBuffer[cnt]=receiveByte(); 
-      else pageBuffer[cnt]=0xFF; 
-	  wdt_reset();
-   } 
-   cnt=0; 
-  
-   pageBuffer[0] = 1;
-   pageBuffer[1] = (address >> 8) & 0xff;
-   pageBuffer[2] = (address & 0xff);
-   I2c.write(I2C_ADDR,2,pageBuffer,SPM_PAGESIZE+3);
-   if (address == 0) {
-	   delay(1000);
-   		I2c.write(I2C_ADDR,2,pageBuffer,SPM_PAGESIZE+3);
-   }
+	// store values to be programmed in temporary buffer 
+	for (cnt=3; cnt<UART_RX_BUFFER_SIZE+3; cnt++) { 
+		if (cnt<size+3) pageBuffer[cnt]=receiveByte(); 
+		else pageBuffer[cnt]=0xFF; 
+		wdt_reset();
+	} 
+	cnt=0; 
 
-   address = address + size;     // word increment 
-   delay(1000);
-   wdt_reset();
-   sendByte('\r'); 
+	pageBuffer[0] = 1;
+	uint8_t * addr_p = (uint8_t*)&address; 
+
+	pageBuffer[1] = *(addr_p + 1);
+	pageBuffer[2] = *addr_p;
+
+	I2c.write(I2C_ADDR,2,pageBuffer,SPM_PAGESIZE+3);
+
+	address = address + size;     // word increment 
+	delay(250);
+	wdt_reset();
+	sendByte('\r'); 
 } 
 
-void exitBootloader() {
+void exitBootloader() 
+{
     I2c.write(I2C_ADDR,1,0x80);
     // what else is it going to do? 
     sendByte('\r'); 
