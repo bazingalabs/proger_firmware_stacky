@@ -60,7 +60,7 @@ void loop() {
 	  uint16_t tempSize;
       switch (cmd) 
       { 
-         case 'P': // Step 8 
+         case 'P': // Step 8
 		 	enterProgramMode(); 
             break; 
          case 'a': // Step 4
@@ -68,8 +68,8 @@ void loop() {
             break; 
          case 'A': // Step 10
 		 	setAddress(); 
-			resetDevice();
-			enterBootloader();
+			//resetDevice();
+			//enterBootloader();
             break; 
          case 'e': // Step 12
 		 	chipErase();    
@@ -101,8 +101,8 @@ void loop() {
          case 'p': // Step 3
 		 	returnProgrammerType();    
             break;          
-         case 'E': 
-            //exitBootloader();    
+         case 'E': // Step 14
+		 	exitBootloader();    
             break; 
          case 'b': // Step 5
 		 	checkBlockSupport();    
@@ -184,6 +184,8 @@ void selectDeviceType() // 'T'
 
 void enterProgramMode() // 'P' 
 { 
+   resetDevice();
+   I2c.write(I2C_ADDR,0);
    // what else is it going to do? 
    sendByte('\r'); 
 } 
@@ -214,7 +216,7 @@ void resetDevice() {
     digitalWrite(5,LOW);
     delay(20);
     digitalWrite(5,HIGH);
-	delay(20);
+	delay(5);
 }
 
 void enterBootloader() {
@@ -236,26 +238,26 @@ void BlockRead(uint16_t size, uint8_t type)
 
 void startBlockFlashRead(uint16_t size) 
 { 
+	//delay(10);
 	//do { 
-   	  uint8_t cmd[4] = {2,1,0,0};
-	  //uint16_t waddress = address >> 1;
-	  cmd[2] = (address << 8 ) & 0xff; // Convert to word address
-	  cmd[3] = address & 0xff;
-   	  //uint8_t read_buffer=0;
-   	  //I2c.write(I2C_ADDR,2,cmd,3);
-	  if (address==0) {
-	  	I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
-		delay(100);
-	  }
-   	  I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
-      address+=size;
-	  delay(100);                       // send byte 
-	  for(int i=0;i<size;i++) {
-	                       // reduce number of bytes to read by one 
-	  	wdt_reset();
-	  	sendByte(pageBuffer[i]);
-	  	delay(5);
-  	}// while (size--);                  // loop through size 
+		uint8_t cmd[4] = {2,1,0,0};
+		uint8_t * addr_p = (uint8_t*)&address; 
+		//uint16_t waddress = address >> 1;
+		cmd[2] = *(addr_p + 1);//(uint8_t)(((uint16_t)address) << 8); // Convert to word address
+		cmd[3] = *addr_p;
+		
+		  //uint8_t read_buffer=0;
+	  	  //I2c.write(I2C_ADDR,2,cmd,3);
+		memset(pageBuffer,0,sizeof(pageBuffer)); 
+	  	  I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
+	     address = address + size;
+	                       // send byte 
+	    for(int i=0;i<size;i++) {
+	                         // reduce number of bytes to read by one 
+	    	wdt_reset();
+	    	sendByte(pageBuffer[i]);
+	    	//delay(5);
+	  }// while (size--);              
 } 
 
 
@@ -305,3 +307,9 @@ void startBlockFlashLoad(uint16_t size)
    wdt_reset();
    sendByte('\r'); 
 } 
+
+void exitBootloader() {
+    I2c.write(I2C_ADDR,1,0x80);
+    // what else is it going to do? 
+    sendByte('\r'); 
+}
