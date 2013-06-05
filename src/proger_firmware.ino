@@ -74,8 +74,8 @@ void loop() {
          case 'e': // Step 12
 		 	chipErase();    
             break; 
-         case 'L': 
-            //enterProgramMode(); 
+         case 'L': // Step 13
+		 	enterProgramMode(); 
             break; 
          case 'T': // Step 7
 		 	selectDeviceType(); 
@@ -236,20 +236,26 @@ void BlockRead(uint16_t size, uint8_t type)
 
 void startBlockFlashRead(uint16_t size) 
 { 
-   do { 
-   	  uint8_t cmd[3] = {1,0,0};
+	//do { 
+   	  uint8_t cmd[4] = {2,1,0,0};
 	  //uint16_t waddress = address >> 1;
 	  cmd[2] = (address << 8 ) & 0xff; // Convert to word address
 	  cmd[3] = address & 0xff;
-   	  uint8_t read_buffer=0;
-   	  I2c.write(I2C_ADDR,2,cmd,3);
-   	  I2c.read(I2C_ADDR,1,&read_buffer);
-      address++;
-      sendByte(read_buffer);                        // send byte 
-      size--;                     // reduce number of bytes to read by one 
-	  wdt_reset();
-	  delay(5);
-   } while (size);                  // loop through size 
+   	  //uint8_t read_buffer=0;
+   	  //I2c.write(I2C_ADDR,2,cmd,3);
+	  if (address==0) {
+	  	I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
+		delay(100);
+	  }
+   	  I2c.read(I2C_ADDR,4,cmd,size,pageBuffer);
+      address+=size;
+	  delay(100);                       // send byte 
+	  for(int i=0;i<size;i++) {
+	                       // reduce number of bytes to read by one 
+	  	wdt_reset();
+	  	sendByte(pageBuffer[i]);
+	  	delay(5);
+  	}// while (size--);                  // loop through size 
 } 
 
 
